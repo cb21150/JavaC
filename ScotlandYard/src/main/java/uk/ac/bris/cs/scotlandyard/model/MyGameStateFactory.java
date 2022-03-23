@@ -93,6 +93,8 @@ public final class MyGameStateFactory implements Factory<GameState> {
 				this.winner = winner;
 			}
 		}
+		if(setup.moves.isEmpty()) throw new IllegalArgumentException("Moves is empty!");
+		if(!(mrX.isMrX())) throw new IllegalArgumentException("No Mr X!");
 		return new MyGameState(setup, ImmutableSet.of(MrX.MRX), ImmutableList.of(), mrX, detectives);
 
 	}
