@@ -16,18 +16,27 @@ public final class MyGameStateFactory implements Factory<GameState> {
 
 	@Nonnull
 	@Override
-	public GameState build(
-			GameSetup setup,
-			Player mrX,
-			ImmutableList<Player> detectives) {
+	public GameState build(GameSetup setup, Player mrX, ImmutableList<Player> detectives) {
+		return new MyGameState(setup, ImmutableSet.of(MrX.MRX), ImmutableList.of(), mrX, detectives);
+
+
+	}
+
 		// TODO
 		final class MyGameState implements GameState {
-			public MyGameState(GameSetup setup, ImmutableSet<Piece> of, ImmutableList<LogEntry> of1, Player mrX, ImmutableList<Player> detectives) {
-			}
+			private GameSetup setup;
+			private ImmutableSet<Piece> remaining;
+			private ImmutableList<LogEntry> log;
+			private Player mrX;
+			private List<Player> detectives;
+			private ImmutableSet<Move> moves;
+			private ImmutableSet<Piece> winner;
+
+
 
 			@Override
 			public GameSetup getSetup() {
-				return null;
+				return setup;
 			}
 
 			@Override
@@ -56,7 +65,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			@Nonnull
 			@Override
 			public ImmutableSet<Piece> getWinner() {
-				return null;
+				return winner;
 			}
 
 			@Nonnull
@@ -70,32 +79,24 @@ public final class MyGameStateFactory implements Factory<GameState> {
 				return null;
 			}
 
-			private GameSetup setup;
-			private ImmutableSet<Piece> remaining;
-			private ImmutableList<LogEntry> log;
-			private Player mrX;
-			private List<Player> detectives;
-			private ImmutableSet<Move> moves;
-			private ImmutableSet<Piece> winner;
-
-			private MyGameState(final GameSetup setup,
-								final ImmutableSet<Piece> remaining,
-								final ImmutableList<LogEntry> log,
-								final Player mrX, List<Player> detectives,
-								final ImmutableSet<Move> moves,
-								final ImmutableSet<Piece> winner) {
+			private MyGameState(
+					final GameSetup setup,
+					final ImmutableSet<Piece> remaining,
+					final ImmutableList<LogEntry> log,
+					final Player mrX,
+					final List<Player> detectives){
 				this.setup = setup;
 				this.remaining = remaining;
 				this.log = log;
 				this.mrX = mrX;
 				this.detectives = detectives;
-				this.moves = moves;
-				this.winner = winner;
+				if(setup.moves.isEmpty()) throw new IllegalArgumentException("Moves is Empty");
+				if(!(mrX.isMrX()))throw new IllegalArgumentException("No Mr X");
 			}
+
+
 		}
-		if(setup.moves.isEmpty()) throw new IllegalArgumentException("Moves is empty!");
-		if(!(mrX.isMrX())) throw new IllegalArgumentException("No Mr X!");
-		return new MyGameState(setup, ImmutableSet.of(MrX.MRX), ImmutableList.of(), mrX, detectives);
+
 
 	}
-}
+
