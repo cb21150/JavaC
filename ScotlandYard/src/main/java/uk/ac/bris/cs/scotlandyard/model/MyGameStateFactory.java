@@ -41,13 +41,20 @@ public final class MyGameStateFactory implements Factory<GameState> {
 
 			@Override
 			public ImmutableSet<Piece> getPlayers() {
-				return null;
+				HashSet<Piece> p = new HashSet<>();
+				for(Player player: detectives){
+					p.add(player.piece());
+				}
+				p.add(mrX.piece());
+				ImmutableSet<Piece> Players = ImmutableSet.copyOf(p);
+				return Players;
 			}
 
 			@Nonnull
 			@Override
 			public Optional<Integer> getDetectiveLocation(Piece.Detective detective) {
-				return Optional.empty();
+				int i = detectives.indexOf(detective);
+				return Optional.of(detectives.get(i).location());
 			}
 
 			@Nonnull
@@ -59,7 +66,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			@Nonnull
 			@Override
 			public ImmutableList<LogEntry> getMrXTravelLog() {
-				return null;
+				return log;
 			}
 
 			@Nonnull
@@ -71,7 +78,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			@Nonnull
 			@Override
 			public ImmutableSet<Move> getAvailableMoves() {
-				return null;
+				return moves;
 			}
 
 			@Override
@@ -92,6 +99,8 @@ public final class MyGameStateFactory implements Factory<GameState> {
 				this.detectives = detectives;
 				if(setup.moves.isEmpty()) throw new IllegalArgumentException("Moves is Empty");
 				if(!(mrX.isMrX()))throw new IllegalArgumentException("No Mr X");
+				if(detectives.isEmpty())throw new IllegalArgumentException("detective Empty");
+
 			}
 
 
