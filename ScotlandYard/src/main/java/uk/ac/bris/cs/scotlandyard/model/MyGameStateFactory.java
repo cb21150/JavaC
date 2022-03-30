@@ -4,6 +4,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.util.*;
 import javax.annotation.Nonnull;
+
+import com.google.common.graph.Graph;
 import uk.ac.bris.cs.scotlandyard.model.Board.GameState;
 import uk.ac.bris.cs.scotlandyard.model.Move.*;
 import uk.ac.bris.cs.scotlandyard.model.Piece.*;
@@ -110,6 +112,20 @@ public final class MyGameStateFactory implements Factory<GameState> {
 					throw new IllegalArgumentException("Detective Double");
 				}
 			}
+			for (Player d :detectives) {
+				if (d.has(Ticket.SECRET)) {
+					throw new IllegalArgumentException("Detectives have secret tickets");
+				}
+			}
+			for(Player d: detectives){
+				int indexd = detectives.indexOf(d);
+				for(Player d2: detectives.subList(indexd+1, detectives.size())){
+					if (d.location()== d2.location()){
+						throw new IllegalArgumentException("detectives overlap");
+					}
+				}
+			}
+			if(setup.graph.edges().isEmpty())throw new IllegalArgumentException("graph is empty");
 
 		}
 			/*private static Set<SingleMove> makeSingleMoves(GameSetup setup, List<Player> detectives, Player player, int source){
