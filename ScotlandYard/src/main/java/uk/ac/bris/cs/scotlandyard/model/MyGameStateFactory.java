@@ -65,6 +65,25 @@ public final class MyGameStateFactory implements Factory<GameState> {
 		@Nonnull
 		@Override
 		public Optional<TicketBoard> getPlayerTickets(Piece piece) {
+			if(piece.isMrX()) {
+				return Optional.of(new TicketBoard() {
+					@Override
+					public int getCount(@Nonnull Ticket ticket) {
+						return mrX.tickets().get(ticket);
+					}
+				});
+			}
+			for(Player d: detectives){
+				if(d.piece()==piece) {
+
+					return Optional.of(new TicketBoard() {
+						@Override
+						public int getCount(@Nonnull Ticket ticket) {
+							return d.tickets().get(ticket);
+						}
+					});
+				}
+				}
 			return Optional.empty();
 		}
 
@@ -128,27 +147,23 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			if(setup.graph.edges().isEmpty())throw new IllegalArgumentException("graph is empty");
 
 		}
-			/*private static Set<SingleMove> makeSingleMoves(GameSetup setup, List<Player> detectives, Player player, int source){
+			private static Set<SingleMove> makeSingleMoves(GameSetup setup, List<Player> detectives, Player player, int source){
 
 				// TODO create an empty collection of some sort, say, HashSet, to store all the SingleMove we generate
-				HashSet<Move> SingleMove = new HashSet<>();
+				HashSet<SingleMove> Moves = new HashSet<>();
 
 				for(int destination : setup.graph.adjacentNodes(source)) {
 					// TODO find out if destination is occupied by a detective
 					//  if the location is occupied, don't add to the collection of moves to return
-					Player x =getPlayers()
-					for (){
-						if (destination == getDetectiveLocation(p)){
-							Move x = destination;
-							Mov.remove();
-
+					boolean available = true;
+					for(Player d: detectives) {
+						if (destination == d.location()) {
+							available = false;
 						}
-
 					}
 					for(Transport t : setup.graph.edgeValueOrDefault(source, destination, ImmutableSet.of()) ) {
-
-						if (Transport.valueOf(player.tickets().toString())== t){
-							Moves.add(destination);
+						if(player.has(t.requiredTicket()) && available){
+							Moves.add(new SingleMove(player.piece(), source, t.requiredTicket(), destination));
 						}
 						// TODO find out if the player has the required tickets
 						//  if it does, construct a SingleMove and add it the collection of moves to return
@@ -158,10 +173,10 @@ public final class MyGameStateFactory implements Factory<GameState> {
 					// TODO consider the rules of secret moves here
 					//  add moves to the destination via a secret ticket if there are any left with the player
 				}
-			return Moves;
+				return Moves;
 				// TODO return the collection of moves
 			}
-		*/
+
 	}
 
 }
