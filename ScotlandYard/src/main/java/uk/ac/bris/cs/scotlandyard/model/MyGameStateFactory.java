@@ -5,7 +5,6 @@ import com.google.common.collect.ImmutableSet;
 import java.util.*;
 import javax.annotation.Nonnull;
 
-import com.google.common.graph.Graph;
 import uk.ac.bris.cs.scotlandyard.model.Board.GameState;
 import uk.ac.bris.cs.scotlandyard.model.Move.*;
 import uk.ac.bris.cs.scotlandyard.model.Piece.*;
@@ -162,20 +161,42 @@ public final class MyGameStateFactory implements Factory<GameState> {
 						}
 					}
 					for(Transport t : setup.graph.edgeValueOrDefault(source, destination, ImmutableSet.of()) ) {
+						// TODO find out if the player has the required tickets
+						//  if it does, construct a SingleMove and add it the collection of moves to return
 						if(player.has(t.requiredTicket()) && available){
 							Moves.add(new SingleMove(player.piece(), source, t.requiredTicket(), destination));
 						}
-						// TODO find out if the player has the required tickets
-						//  if it does, construct a SingleMove and add it the collection of moves to return
-
 					}
 
 					// TODO consider the rules of secret moves here
 					//  add moves to the destination via a secret ticket if there are any left with the player
+					if(player.has(Ticket.SECRET) && available){
+						Moves.add(new SingleMove(player.piece(), source, Ticket.SECRET, destination));
+
+					}
 				}
 				return Moves;
 				// TODO return the collection of moves
 			}
+		private static Set<DoubleMove> makeDoubleMoves(GameSetup setup, List<Player> detectives, Player player, int source) {
+			HashSet<SingleMove> moves1 = new HashSet<>();
+			moves1 = (HashSet<SingleMove>) makeSingleMoves(setup, detectives, player, source);
+			Set<SingleMove> Moves2 = new HashSet<>();
+			for (SingleMove move : moves1) {
+				Moves2 = makeSingleMoves(setup, detectives, player, move.destination);
+			}
+			Set<DoubleMove> Moves = new HashSet<>();
+			for (SingleMove move : moves1) {
+				for(SingleMove move2 : Moves2){
+
+					Moves.add(new DoubleMove(player.piece(), source,
+							move.ticket, move.destination,
+							move2.ticket, move2.destination));
+				}
+
+			}
+		return Moves;
+		}
 
 	}
 
