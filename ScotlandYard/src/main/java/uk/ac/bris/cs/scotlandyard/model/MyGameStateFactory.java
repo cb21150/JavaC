@@ -103,7 +103,26 @@ public final class MyGameStateFactory implements Factory<GameState> {
 		@Nonnull
 		@Override
 		public ImmutableSet<Move> getAvailableMoves() {
-			return moves;
+
+			HashSet<SingleMove> moves1 = new HashSet<>();
+			HashSet<Move> moves2;
+			HashSet<Move> moves = new HashSet<>();
+			HashSet<Player> players = new HashSet<>();
+			for (Player d : detectives){
+				if(remaining.contains(d.piece())) {
+					moves1 = (HashSet<SingleMove>) makeSingleMoves(setup, detectives, d, d.location());
+				}
+			}
+
+			moves2 = (HashSet<Move>) makeDoubleMoves(setup, detectives, mrX, mrX.location());
+			moves.addAll(moves1);
+			moves.addAll(moves2);
+			ImmutableSet<Move>Moves = ImmutableSet.copyOf(moves2);
+			return Moves;
+
+
+
+
 		}
 
 		@Override
@@ -163,39 +182,42 @@ public final class MyGameStateFactory implements Factory<GameState> {
 					for(Transport t : setup.graph.edgeValueOrDefault(source, destination, ImmutableSet.of()) ) {
 						// TODO find out if the player has the required tickets
 						//  if it does, construct a SingleMove and add it the collection of moves to return
-						if(player.has(t.requiredTicket()) && available){
+						if (player.has(t.requiredTicket()) && available) {
 							Moves.add(new SingleMove(player.piece(), source, t.requiredTicket(), destination));
 						}
-					}
 
-					// TODO consider the rules of secret moves here
-					//  add moves to the destination via a secret ticket if there are any left with the player
-					if(player.has(Ticket.SECRET) && available){
-						Moves.add(new SingleMove(player.piece(), source, Ticket.SECRET, destination));
-
+						// TODO consider the rules of secret moves here
+						//  add moves to the destination via a secret ticket if there are any left with the player
+						if (player.has(Ticket.SECRET) && available) {
+							Moves.add(new SingleMove(player.piece(), source, Ticket.SECRET, destination));
+						}
 					}
 				}
 				return Moves;
 				// TODO return the collection of moves
 			}
-		private static Set<DoubleMove> makeDoubleMoves(GameSetup setup, List<Player> detectives, Player player, int source) {
-			HashSet<SingleMove> moves1 = new HashSet<>();
+		private static Set<Move> makeDoubleMoves(GameSetup setup, List<Player> detectives, Player player, int source) {
+			if (player.piece().isDetective())return null;
+			HashSet<SingleMove> moves1;
 			moves1 = (HashSet<SingleMove>) makeSingleMoves(setup, detectives, player, source);
 			Set<SingleMove> Moves2 = new HashSet<>();
 			for (SingleMove move : moves1) {
 				Moves2 = makeSingleMoves(setup, detectives, player, move.destination);
 			}
 			Set<DoubleMove> Moves = new HashSet<>();
-			for (SingleMove move : moves1) {
-				for(SingleMove move2 : Moves2){
-
-					Moves.add(new DoubleMove(player.piece(), source,
-							move.ticket, move.destination,
-							move2.ticket, move2.destination));
-				}
-
+			if(player.has(Ticket.DOUBLE) ) {
+					for (SingleMove move1 : moves1) {
+						for (SingleMove move2 : Moves2) {
+								Moves.add(new DoubleMove(player.piece(), source,
+										move1.ticket, move1.destination,
+										move2.ticket, move2.destination));
+							}
+						}
 			}
-		return Moves;
+			HashSet<Move> allmoves = new HashSet<>();
+			for(Move m: moves1) allmoves.add(m);
+			for(Move m: Moves) allmoves.add(m);
+		return allmoves;
 		}
 
 	}
