@@ -9,6 +9,7 @@ import uk.ac.bris.cs.scotlandyard.model.Board.GameState;
 import uk.ac.bris.cs.scotlandyard.model.Move.*;
 import uk.ac.bris.cs.scotlandyard.model.Piece.*;
 import uk.ac.bris.cs.scotlandyard.model.ScotlandYard.*;
+
 /**
  * cw-model
  * Stage 1: Complete this class
@@ -27,7 +28,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 	final class MyGameState implements GameState {
 		private GameSetup setup;
 		private ImmutableSet<Piece> remaining;
-		private ImmutableList<LogEntry> log;
+		public ImmutableList<LogEntry> log;
 		private Player mrX;
 		private List<Player> detectives;
 		private ImmutableSet<Move> moves;
@@ -117,7 +118,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			moves2 = (HashSet<Move>) makeDoubleMoves(setup, detectives, mrX, mrX.location());
 			moves.addAll(moves1);
 			moves.addAll(moves2);
-			ImmutableSet<Move>Moves = ImmutableSet.copyOf(moves2);
+			ImmutableSet<Move>Moves = ImmutableSet.copyOf(moves);
 			return Moves;
 
 
@@ -127,6 +128,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 
 		@Override
 		public GameState advance(Move move) {
+			if(!moves.contains(move)) throw new IllegalArgumentException("Illegal move: "+move);
 			return null;
 		}
 
@@ -201,19 +203,24 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			HashSet<SingleMove> moves1;
 			moves1 = (HashSet<SingleMove>) makeSingleMoves(setup, detectives, player, source);
 			Set<SingleMove> Moves2 = new HashSet<>();
-			for (SingleMove move : moves1) {
-				Moves2 = makeSingleMoves(setup, detectives, player, move.destination);
-			}
 			Set<DoubleMove> Moves = new HashSet<>();
-			if(player.has(Ticket.DOUBLE) ) {
+			int counter=0;
+				if (player.has(Ticket.DOUBLE)&& setup.moves.size()>=2) {
 					for (SingleMove move1 : moves1) {
+						Moves2 = makeSingleMoves(setup, detectives, player, move1.destination);
 						for (SingleMove move2 : Moves2) {
+							if (!(move1.ticket.name().equals(move2.ticket.name())) || player.hasAtLeast(move1.ticket, 2)) {
+
 								Moves.add(new DoubleMove(player.piece(), source,
 										move1.ticket, move1.destination,
 										move2.ticket, move2.destination));
+								System.out.println(move1.ticket.name() + " " + move2.ticket.name());
+								counter += 1;
 							}
 						}
-			}
+					}
+				}
+			System.out.println(counter);
 			HashSet<Move> allmoves = new HashSet<>();
 			for(Move m: moves1) allmoves.add(m);
 			for(Move m: Moves) allmoves.add(m);
