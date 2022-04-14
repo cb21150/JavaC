@@ -214,13 +214,10 @@ public final class MyGameStateFactory implements Factory<GameState> {
 								Moves.add(new DoubleMove(player.piece(), source,
 										move1.ticket, move1.destination,
 										move2.ticket, move2.destination));
-								System.out.println(move1.ticket.name() + " " + move2.ticket.name());
-								counter += 1;
 							}
 						}
 					}
 				}
-			System.out.println(counter);
 			HashSet<Move> allmoves = new HashSet<>();
 			for(Move m: moves1) allmoves.add(m);
 			for(Move m: Moves) allmoves.add(m);
