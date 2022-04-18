@@ -35,6 +35,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 		private ImmutableSet<Piece> winner;
 
 
+
 		@Override
 		public GameSetup getSetup() {
 			return setup;
@@ -66,22 +67,12 @@ public final class MyGameStateFactory implements Factory<GameState> {
 		@Override
 		public Optional<TicketBoard> getPlayerTickets(Piece piece) {
 			if(piece.isMrX()) {
-				return Optional.of(new TicketBoard() {
-					@Override
-					public int getCount(@Nonnull Ticket ticket) {
-						return mrX.tickets().get(ticket);
-					}
-				});
+				return Optional.of(ticket -> mrX.tickets().get(ticket));
 			}
 			for(Player d: detectives){
 				if(d.piece()==piece) {
 
-					return Optional.of(new TicketBoard() {
-						@Override
-						public int getCount(@Nonnull Ticket ticket) {
-							return d.tickets().get(ticket);
-						}
-					});
+					return Optional.of(ticket -> d.tickets().get(ticket));
 				}
 				}
 			return Optional.empty();
@@ -125,11 +116,24 @@ public final class MyGameStateFactory implements Factory<GameState> {
 
 
 		}
-
 		@Override
 		public GameState advance(Move move) {
 			if(!moves.contains(move)) throw new IllegalArgumentException("Illegal move: "+move);
+
+			Move moveType = move.accept(new Visitor<Move>() {
+				@Override
+				public Move visit(SingleMove singleMove) {
+
+					return singleMove;
+				}
+				@Override
+				public Move visit(DoubleMove doubleMove) {
+
+					return doubleMove;
+				}
+			});
 			return null;
+
 		}
 
 		private MyGameState(
@@ -167,6 +171,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			if(setup.graph.edges().isEmpty())throw new IllegalArgumentException("graph is empty");
 
 		}
+
 			private static Set<SingleMove> makeSingleMoves(GameSetup setup, List<Player> detectives, Player player, int source){
 
 				// TODO create an empty collection of some sort, say, HashSet, to store all the SingleMove we generate
