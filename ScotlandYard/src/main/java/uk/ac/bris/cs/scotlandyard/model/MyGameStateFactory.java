@@ -118,22 +118,33 @@ public final class MyGameStateFactory implements Factory<GameState> {
 		}
 		@Override
 		public GameState advance(Move move) {
-			if(!moves.contains(move)) throw new IllegalArgumentException("Illegal move: "+move);
+			moves = getAvailableMoves();
+			if (!moves.contains(move)) throw new IllegalArgumentException("Illegal move: " + move);
 
-			Move moveType = move.accept(new Visitor<Move>() {
+			class moveType implements Visitor<GameState> {
+
 				@Override
-				public Move visit(SingleMove singleMove) {
-
-					return singleMove;
+				public GameState visit(DoubleMove move) {
+					return null;
 				}
+
 				@Override
-				public Move visit(DoubleMove doubleMove) {
+				public GameState visit(SingleMove MoveS) {
+					if (move.commencedBy().isMrX()) {
+						List<LogEntry> log1 = List.copyOf(log);
+						ImmutableList<LogEntry> log2 = ImmutableList.copyOf(log1);
+						mrX.at(MoveS.destination);
+						mrX.use(MoveS.ticket);
+						return new MyGameState(setup, remaining, log2, mrX, detectives);
 
-					return doubleMove;
+
+					} else {
+						System.out.println("detective move");
+						return new MyGameState(setup, remaining, log, mrX, detectives);
+					}
 				}
-			});
-			return null;
-
+			}
+			return move.accept(new moveType());
 		}
 
 		private MyGameState(
