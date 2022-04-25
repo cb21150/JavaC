@@ -9,6 +9,7 @@ import uk.ac.bris.cs.scotlandyard.model.Board.GameState;
 import uk.ac.bris.cs.scotlandyard.model.Move.*;
 import uk.ac.bris.cs.scotlandyard.model.Piece.*;
 import uk.ac.bris.cs.scotlandyard.model.ScotlandYard.*;
+import uk.ac.bris.cs.scotlandyard.ui.GameControl;
 
 /**
  * cw-model
@@ -28,11 +29,13 @@ public final class MyGameStateFactory implements Factory<GameState> {
 	final class MyGameState implements GameState {
 		private GameSetup setup;
 		private ImmutableSet<Piece> remaining;
-		public ImmutableList<LogEntry> log;
+		private ImmutableSet<Piece> detectivesPiece;
+		public static ImmutableList<LogEntry> log;
 		private Player mrX;
 		private List<Player> detectives;
 		private ImmutableSet<Move> moves;
 		private ImmutableSet<Piece> winner;
+		private Integer round;
 
 
 
@@ -118,8 +121,8 @@ public final class MyGameStateFactory implements Factory<GameState> {
 		}
 		@Override
 		public GameState advance(Move move) {
-			moves = getAvailableMoves();
-			if (!moves.contains(move)) throw new IllegalArgumentException("Illegal move: " + move);
+			moves=getAvailableMoves();
+			if(!moves.contains(move))throw new IllegalArgumentException("Illegal move "+ move);
 
 			class moveType implements Visitor<GameState> {
 
@@ -131,17 +134,34 @@ public final class MyGameStateFactory implements Factory<GameState> {
 				@Override
 				public GameState visit(SingleMove MoveS) {
 					if (move.commencedBy().isMrX()) {
-						List<LogEntry> log1 = List.copyOf(log);
-						ImmutableList<LogEntry> log2 = ImmutableList.copyOf(log1);
+						ImmutableList<LogEntry> log1;
+						if (log.size()== 3 || log.size() == 8 || log.size() == 13 || log.size()== 18 || log.size() == 24) {
+							log1 = updatelog(LogEntry.reveal(MoveS.ticket, MoveS.destination), log);
+						} else {
+							log1 = updatelog(LogEntry.hidden(MoveS.ticket), log);
+						}
+						System.out.println(log1.size());
 						mrX.at(MoveS.destination);
 						mrX.use(MoveS.ticket);
-						return new MyGameState(setup, remaining, log2, mrX, detectives);
+						ImmutableSet Finalremaining= updateremaining(remaining, mrX.piece());
+
+						return new MyGameState(setup, Finalremaining, log1, mrX, detectives);
 
 
 					} else {
-						System.out.println("detective move");
-						return new MyGameState(setup, remaining, log, mrX, detectives);
+						for (Player d : detectives) {
+							if (move.commencedBy().webColour() == d.piece().webColour()) {
+								d.at(MoveS.destination);
+								d.use(MoveS.ticket);
+								mrX.give(MoveS.ticket);
+								ImmutableSet<Piece> remaining2 = updateremaining(remaining, d.piece());
+								return new MyGameState(setup, remaining2, log, mrX, detectives);
+							}
+
+						}
+						return new MyGameState(setup,remaining,log,mrX,detectives);
 					}
+
 				}
 			}
 			return move.accept(new moveType());
@@ -158,6 +178,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			this.log = log;
 			this.mrX = mrX;
 			this.detectives = detectives;
+
 			if (setup.moves.isEmpty()) throw new IllegalArgumentException("Moves is Empty");
 			if (!(mrX.isMrX())) throw new IllegalArgumentException("No Mr X");
 			if (detectives.isEmpty()) throw new IllegalArgumentException("detective Empty");
@@ -220,7 +241,6 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			moves1 = (HashSet<SingleMove>) makeSingleMoves(setup, detectives, player, source);
 			Set<SingleMove> Moves2 = new HashSet<>();
 			Set<DoubleMove> Moves = new HashSet<>();
-			int counter=0;
 				if (player.has(Ticket.DOUBLE)&& setup.moves.size()>=2) {
 					for (SingleMove move1 : moves1) {
 						Moves2 = makeSingleMoves(setup, detectives, player, move1.destination);
@@ -239,6 +259,28 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			for(Move m: Moves) allmoves.add(m);
 		return allmoves;
 		}
+		private ImmutableList<LogEntry> updatelog(LogEntry e, ImmutableList<LogEntry> log2){
+			List<LogEntry> templog = new ArrayList<LogEntry>(log2);
+			System.out.println(log2);
+			templog.add(e);
+			ImmutableList<LogEntry> log1 = ImmutableList.copyOf(templog);
+			System.out.println(log1.size());
+			return log1;
+		}
+		private ImmutableSet<Piece> updateremaining(ImmutableSet<Piece> remain, Piece p){
+			HashSet<Piece> remainingd;
+			if(p.isMrX()){
+				remainingd = new HashSet<>(getPlayers());
+			}
+			else{
+				remainingd = new HashSet<>(remain);
+			}
+			remainingd.remove(p);
+			if(getAvailableMoves().isEmpty())remainingd.add(mrX.piece());
+			ImmutableSet<Piece> Finalremaining = ImmutableSet.copyOf(remainingd);
+			return Finalremaining;
+		}
+
 
 	}
 
