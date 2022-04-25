@@ -127,8 +127,25 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			class moveType implements Visitor<GameState> {
 
 				@Override
-				public GameState visit(DoubleMove move) {
-					return null;
+				public GameState visit(DoubleMove MoveD) {
+					ImmutableList<LogEntry> log1;
+					if (log.size()== 3 || log.size() == 8 || log.size() == 13 || log.size()== 18 || log.size() == 24) {
+						log1 = updatelog(LogEntry.reveal(MoveD.ticket1, MoveD.destination1), log);
+					} else {
+						log1 = updatelog(LogEntry.hidden(MoveD.ticket1), log);
+					}
+					mrX.at(MoveD.destination1);
+					mrX.use(MoveD.ticket1);
+					if (log.size()== 3 || log.size() == 8 || log.size() == 13 || log.size()== 18 || log.size() == 24) {
+						log1 = updatelog(LogEntry.reveal(MoveD.ticket2, MoveD.destination2), log1);
+					} else {
+						log1 = updatelog(LogEntry.hidden(MoveD.ticket1), log1);
+					}
+					mrX.at(MoveD.destination2);
+					mrX.use(MoveD.ticket2);
+					ImmutableSet Finalremaining = updateremaining(remaining, mrX.piece());
+
+					return new MyGameState(setup, Finalremaining, log1, mrX, detectives);
 				}
 
 				@Override
