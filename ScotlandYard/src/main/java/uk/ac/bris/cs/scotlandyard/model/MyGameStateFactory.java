@@ -80,7 +80,6 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			}
 			for(Player d: detectives){
 				if(d.piece()==piece) {
-
 					return Optional.of(new TicketBoard() {
 						@Override
 						public int getCount(@Nonnull Ticket ticket) {
@@ -107,19 +106,16 @@ public final class MyGameStateFactory implements Factory<GameState> {
 		@Nonnull
 		@Override
 		public ImmutableSet<Move> getAvailableMoves() {
-			HashSet<SingleMove> moves1 = new HashSet<>();
-			HashSet<Move> moves2 = new HashSet<>();
 			HashSet<Move> moves = new HashSet<>();
-
-			for (Player d  : detectives){
-				if(remaining.contains(d.piece())){
-					moves1 = (HashSet<SingleMove>) makeSingleMoves(setup, detectives, d, d.location());
-					moves.addAll(moves1);
-				}
-			}
 			if (remaining.contains(mrX.piece())) {
-				moves2=(HashSet<Move>) makeDoubleMoves(setup, detectives, mrX, mrX.location());
-				moves.addAll(moves2);
+				moves.addAll(makeDoubleMoves(setup, detectives, mrX, mrX.location()));
+			}
+			else {
+				for (Player d : detectives) {
+					if (remaining.contains(d.piece())) {
+						moves.addAll(makeSingleMoves(setup, detectives, d, d.location()));
+					}
+				}
 			}
 			ImmutableSet<Move>Moves = ImmutableSet.copyOf(moves);
 			return Moves;
@@ -140,11 +136,11 @@ public final class MyGameStateFactory implements Factory<GameState> {
 					System.out.println(log1);
 					ImmutableList<LogEntry> log2 = updatelog(MoveD.ticket2,MoveD.destination2, log1);
 					System.out.println(log2);
-					Player player = mrX.at(MoveD.destination1);
-					Player player2 = player.at(MoveD.destination2);
-					Player player3 = player2.use(MoveD.tickets());
+					mrX= mrX.at(MoveD.destination1);
+					mrX = mrX.at(MoveD.destination2);
+					mrX = mrX.use(MoveD.tickets());
 					ImmutableSet Finalremaining = updateremaining(remaining, mrX.piece());
-					return new MyGameState(setup, Finalremaining, log2, player3, detectives);
+					return new MyGameState(setup, Finalremaining, log2, mrX, detectives);
 				}
 
 				@Override
@@ -152,24 +148,22 @@ public final class MyGameStateFactory implements Factory<GameState> {
 					if (move.commencedBy().isMrX()) {
 						ImmutableList<LogEntry> log1;
 						log1 = updatelog(MoveS.ticket,MoveS.destination, log);
-						Player player = mrX.at(MoveS.destination);
-						Player player1 = player.use(MoveS.ticket);
+						mrX = mrX.at(MoveS.destination);
+						mrX = mrX.use(MoveS.ticket);
 						ImmutableSet Finalremaining= updateremaining(remaining, mrX.piece());
-						return new MyGameState(setup, Finalremaining, log1, player1, detectives);
+						return new MyGameState(setup, Finalremaining, log1, mrX, detectives);
 					}else{
 						List<Player> newDetectives = new ArrayList<>(detectives);
 						ImmutableSet<Piece> Finalremaining = updateremaining(remaining,MoveS.commencedBy());
 						for (Player d : detectives) {
-							if (move.commencedBy().webColour() == d.piece().webColour()) {
-								Player det = d.use(MoveS.ticket);
-								Player detective = det.at(MoveS.destination);
-								newDetectives.add(detective);
-								newDetectives.remove(d);
+							if (move.commencedBy()== d.piece()) {
+								Player newD = d.use (MoveS.ticket);
+								newD = newD.at(MoveS.destination);
+								newDetectives.set(detectives.indexOf(d), newD);
 							}
 						}
-						Player MRX = mrX.give(MoveS.ticket);
-						detectives = newDetectives;
-						return new MyGameState(setup, Finalremaining,log,MRX,detectives);
+						mrX = mrX.give(MoveS.ticket);
+						return new MyGameState(setup, Finalremaining,log,mrX,newDetectives);
 					}
 				}
 
@@ -199,11 +193,11 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			for (Player d :this.detectives) {
 				//to see if mrx is in the same location as the detective
 				if (mrX.location() == d.location()) {
-					for (Player p : detectives) {
+					for (Player p : this.detectives) {
 						winners.add(p.piece());
 					}
 				}
-				if (Iterables.all(d.tickets().values(), (Integer e) -> e == 0)) {          //this is from https://stackoverflow.com/questions/37950780/java-clear-the-list-if-all-elements-are-zero
+				if (Iterables.all(d.tickets().values(), (Integer e) -> e == 0)) {        //this is from https://stackoverflow.com/questions/37950780/java-clear-the-list-if-all-elements-are-zero
 					deadPlayers.add(d);
 					if (deadPlayers.size() == detectives.size()) {
 						winners.add(this.mrX.piece());
@@ -224,29 +218,18 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			if ( !winner.isEmpty()){
 				this.remaining = ImmutableSet.of();
 			}
-			//System.out.println("this is winner in the constructor" +winner);
-			//System.out.println("this is moves in the constructor" +moves);
-
-
-
-
-
 
 			//-------------------------------------------------------------------------------------
 			if (setup.moves.isEmpty()) throw new IllegalArgumentException("Moves is Empty");
 			if (!(mrX.isMrX())) throw new IllegalArgumentException("No Mr X");
 			if (detectives.isEmpty()) throw new IllegalArgumentException("detective Empty");
-			for (Player x :detectives) {
-				if (x.has(Ticket.DOUBLE)) {
+			for (Player d :detectives) {
+				if (d.has(Ticket.DOUBLE)) {
 					throw new IllegalArgumentException("Detective Double");
 				}
-			}
-			for (Player d :detectives) {
 				if (d.has(Ticket.SECRET)) {
 					throw new IllegalArgumentException("Detectives have secret tickets");
 				}
-			}
-			for(Player d: detectives){
 				int indexd = detectives.indexOf(d);
 				for(Player d2: detectives.subList(indexd+1, detectives.size())){
 					if (d.location()== d2.location()){
@@ -255,47 +238,6 @@ public final class MyGameStateFactory implements Factory<GameState> {
 				}
 			}
 			if(setup.graph.edges().isEmpty())throw new IllegalArgumentException("graph is empty");
-
-
-
-			//------------------------------------------------------------------------------------
-			/*
-			Set<Piece> newDetectives = new HashSet<>();
-
-			System.out.println(remaining);
-			System.out.println(moves);
-
-			Set<Piece> winners = new HashSet<>();
-			if (this.remaining.contains(this.mrX.piece()))
-				if (moves.isEmpty()) {
-					System.out.println("detecitives are the winner");
-					for (Player d : detectives){
-						newDetectives.add(d.piece());
-					}
-					winners.addAll(newDetectives);
-				}
-
-			HashSet<Player> deadPlayers = new HashSet<>();
-			for (Player d :this.detectives) {
-				//to see if mrx is in the same location as the detective
-				if (this.mrX.location() == d.location()) {
-					for (Player p : detectives) {
-						newDetectives.add(p.piece());
-					}
-					winners.addAll(newDetectives);
-
-				}
-				//to see if the detectives have no tickets left
-				if (Iterables.all(d.tickets().values(), (Integer e) -> e == 0)) {          //this is from https://stackoverflow.com/questions/37950780/java-clear-the-list-if-all-elements-are-zero
-					deadPlayers.add(d);
-					if (deadPlayers.size() == detectives.size()) {
-						winners.add(this.mrX.piece());
-					}
-
-				}
-			}
-			this.winner = ImmutableSet.copyOf(winners);
-			*/
 
 		}
 
@@ -368,10 +310,10 @@ public final class MyGameStateFactory implements Factory<GameState> {
 		}
 		private ImmutableSet<Piece> updateremaining(ImmutableSet<Piece> remain,Piece p){
 			HashSet<Piece> remainingd = new HashSet<>(remain);
-
 			if (remain.contains(mrX.piece())){
-				remainingd.addAll(getPlayers());
-				remainingd.remove(mrX.piece());
+				for (Player d :detectives){
+					remainingd.add(d.piece());
+				}
 			}
 			remainingd.remove(p);
 
@@ -392,8 +334,6 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			ImmutableSet<Piece> Finalremaining = ImmutableSet.copyOf(remainingd);
 			return Finalremaining;
 		}
-
-
 	}
 
 }
