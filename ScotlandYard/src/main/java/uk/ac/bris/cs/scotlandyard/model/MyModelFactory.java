@@ -23,10 +23,6 @@ public final class MyModelFactory implements Factory<Model> {
 		class Mymodel implements Model {
 			private Board.GameState MyGame;
 			private Set<Observer> Observers;
-			private Mymodel() {
-				this.MyGame = new MyGameStateFactory().build(setup, mrX, detectives);
-				this.Observers = new HashSet<>();
-			}
 
 			@Nonnull
 			@Override
@@ -49,7 +45,6 @@ public final class MyModelFactory implements Factory<Model> {
 				if(!Observers.contains(observer))throw new IllegalArgumentException("observer already unregistered");
 				if(Observers.isEmpty()) throw new IllegalArgumentException("observers empty");
 				Observers.remove(observer);
-
 			}
 
 			@Nonnull
@@ -61,24 +56,19 @@ public final class MyModelFactory implements Factory<Model> {
 
 			@Override
 			public void chooseMove(@Nonnull Move move) {
-				// TODO Advance the model with move, then notify all observers of what what just happened.
-
 				MyGame = MyGame.advance(move);
-				if(!MyGame.getWinner().isEmpty()){
-					for (Observer observer: getObservers()) {
+				for (Observer observer:getObservers()){
+					if(!MyGame.getWinner().isEmpty()){
 						observer.onModelChanged(MyGame, Observer.Event.GAME_OVER);
-					}
-
-				}
-				else{
-					for (Observer observer: getObservers()) {
+					} else{
 						observer.onModelChanged(MyGame, Observer.Event.MOVE_MADE);
 					}
 				}
 
-
-				//  you may want to use getWinner() to determine whether to send out Event.MOVE_MADE or Event.GAME_OVER
-
+			}
+			private Mymodel() {
+				this.MyGame = new MyGameStateFactory().build(setup, mrX, detectives);
+				this.Observers = new HashSet<>();
 			}
 		}
 		return new Mymodel();
