@@ -105,7 +105,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 		public ImmutableSet<Move> getAvailableMoves() {
 			HashSet<Move> moves = new HashSet<>();
 			if (remaining.contains(mrX.piece())) { //checks if it is Mrx's turn
-				moves.addAll(makeDoubleMoves(setup, detectives, mrX, mrX.location())); //mrx can do doublemoves so make double moves is usdc
+				moves.addAll(makeDoubleMoves(setup, detectives, mrX, mrX.location())); //mrx can do doublemoves so make double moves is used
 			}
 			else {
 				for (Player d : detectives) {
