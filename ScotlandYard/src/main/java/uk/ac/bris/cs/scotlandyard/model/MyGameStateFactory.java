@@ -4,9 +4,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.util.*;
 import javax.annotation.Nonnull;
-
-import com.google.common.collect.Iterables;
-import jdk.jfr.Frequency;
 import uk.ac.bris.cs.scotlandyard.model.Board.GameState;
 import uk.ac.bris.cs.scotlandyard.model.Move.*;
 import uk.ac.bris.cs.scotlandyard.model.Piece.*;
@@ -35,6 +32,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 		private List<Player> detectives;
 		private ImmutableSet<Move> moves;
 		private ImmutableSet<Piece> winner;
+
 
 
 		@Override
@@ -106,13 +104,13 @@ public final class MyGameStateFactory implements Factory<GameState> {
 		@Override
 		public ImmutableSet<Move> getAvailableMoves() {
 			HashSet<Move> moves = new HashSet<>();
-			if (remaining.contains(mrX.piece())) {
-				moves.addAll(makeDoubleMoves(setup, detectives, mrX, mrX.location()));
+			if (remaining.contains(mrX.piece())) { //checks if it is Mrx's turn
+				moves.addAll(makeDoubleMoves(setup, detectives, mrX, mrX.location())); //mrx can do doublemoves so make double moves is usdc
 			}
 			else {
 				for (Player d : detectives) {
 					if (remaining.contains(d.piece())) {
-						moves.addAll(makeSingleMoves(setup, detectives, d, d.location()));
+						moves.addAll(makeSingleMoves(setup, detectives, d, d.location()));//detectives can't do doublemoves so makesinglemoves is used
 					}
 				}
 			}
@@ -128,7 +126,6 @@ public final class MyGameStateFactory implements Factory<GameState> {
 				@Override
 				public GameState visit(DoubleMove MoveD) {
 					ImmutableList<LogEntry> log2 = updateLog(MoveD.ticket2,MoveD.destination2, updateLog(MoveD.ticket1,MoveD.destination2,log)); //updates the log twice
-					mrX= mrX.at(MoveD.destination1);
 					mrX = mrX.at(MoveD.destination2);
 					mrX = mrX.use(MoveD.tickets());
 					ImmutableSet Finalremaining = updateRemaining(remaining, mrX.piece());
@@ -181,27 +178,27 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			//----------------------This is where winner is worked out --------------------------
 			HashSet<Piece> winners = new HashSet<>();
 			HashSet<Player> deadPlayers = new HashSet<>();
-			for (Player d :this.detectives) {
+			for (Player d : detectives) {
 				//to see if mrx is in the same location as the detective
 				if (mrX.location() == d.location())  {
-					for (Player p : this.detectives) {
+					for (Player p : detectives) {
 						winners.add(p.piece());
 					}
 				}
-				if (Iterables.all(d.tickets().values(), (Integer e) -> e == 0)) {        //this is from https://stackoverflow.com/questions/37950780/java-clear-the-list-if-all-elements-are-zero
-					deadPlayers.add(d);
+				//checks if the detective doesn't have any tickets (all their values equal to zero)
+				if (d.tickets().values().stream().allMatch((Integer el) -> el == 0)){
+					deadPlayers.add(d);  //if they don't have any tickets then add them to a list of they dead/can no longer move detectives
 					if (deadPlayers.size() == detectives.size()) {
-						winners.add(this.mrX.piece());
+						//if all detectives cant move mrX wins
+						winners.add(mrX.piece());
 					}
 
 				}
 				if (remaining.contains(mrX.piece()) && moves.isEmpty()){
-					for (Player c : this.detectives) {
-						winners.add(c.piece());
-					}
+					detectives.forEach (det -> winners.add(det.piece()));
 				}
-				if (this.log.size() == this.setup.moves.size()){
-					winners.add(this.mrX.piece());
+				if (this.log.size() == setup.moves.size()){
+					winners.add(mrX.piece());
 				}
 			}
 			this.winner = ImmutableSet.copyOf(winners);
@@ -230,7 +227,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 
 		}
 
-		private static Set<SingleMove> makeSingleMoves(GameSetup setup, List<Player> detectives, Player player, int source){
+		private static Set<SingleMove> makeSingleMoves(GameSetup setup, List<Player> detectives, Player player, int source){//gets all the available singlemoves for player given
 
 			HashSet<SingleMove> Moves = new HashSet<>();
 
@@ -256,27 +253,26 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			return Moves;
 		}
 
-		private static Set<Move> makeDoubleMoves(GameSetup setup, List<Player> detectives, Player player, int source) {
+		private static Set<Move> makeDoubleMoves(GameSetup setup, List<Player> detectives, Player player, int source) { //gets available moves including doublemoves
 			HashSet<SingleMove> moves1;
+			HashSet<Move> allmoves = new HashSet<>();
 			moves1 = (HashSet<SingleMove>) makeSingleMoves(setup, detectives, player, source);
+			for(Move m: moves1) allmoves.add(m); //adds all mrx's single moves
 			Set<SingleMove> Moves2;
-			Set<DoubleMove> Moves = new HashSet<>();
-			if (player.has(Ticket.DOUBLE)&& setup.moves.size()>=2) {        //checks to see if mrX has the appropriate ticket and also has enough moves left
+			if (player.has(Ticket.DOUBLE)&& setup.moves.size()>=2) {        //checks to see if mrX has a double ticket and also has enough moves left
 				for (SingleMove move1 : moves1) {
 					Moves2 = makeSingleMoves(setup, detectives, player, move1.destination);
 					for (SingleMove move2 : Moves2) {
+						//checks that the double move doesn't use the same ticket or if it does mrX has at least 2 of them
 						if (!(move1.ticket.name().equals(move2.ticket.name())) || player.hasAtLeast(move1.ticket, 2)) {
 
-							Moves.add(new DoubleMove(player.piece(), source,
+							allmoves.add(new DoubleMove(player.piece(), source,
 									move1.ticket, move1.destination,
-									move2.ticket, move2.destination));
+									move2.ticket, move2.destination)); //adds mrx's double move
 						}
 					}
 				}
 			}
-			HashSet<Move> allmoves = new HashSet<>();
-			for(Move m: moves1) allmoves.add(m);
-			for(Move m: Moves) allmoves.add(m);
 			return allmoves;
 		}
 		//Helper Functions
@@ -293,9 +289,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 		private ImmutableSet<Piece> updateRemaining(ImmutableSet<Piece> remain,Piece p){
 			HashSet<Piece> remainingd = new HashSet<>(remain);
 			if (remain.contains(mrX.piece())){
-				for (Player d :detectives){
-					remainingd.add(d.piece());
-				}
+				detectives.forEach(detective -> remainingd.add(detective.piece()));
 			}
 			remainingd.remove(p);
 			if (remainingd.isEmpty()){
@@ -303,9 +297,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			}
 			HashSet<Piece> deadDetectives = new HashSet<>();
 			for (Player d : detectives){
-				if (makeSingleMoves(setup, detectives, d, d.location()).isEmpty()){
-					deadDetectives.add(d.piece());
-				}
+				if (makeSingleMoves(setup, detectives, d, d.location()).isEmpty())deadDetectives.add(d.piece());
 			}
 			if (!(deadDetectives.size() == detectives.size()) && (remainingd.equals(deadDetectives))){
 				remainingd.removeAll(deadDetectives);
